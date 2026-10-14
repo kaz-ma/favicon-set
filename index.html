@@ -256,6 +256,7 @@
   </div>
   <pre id="tags">画像を入れて「一式を作る」を押してください。</pre>
   <p class="note" id="urlNote" hidden>サイトのURLが未入力です。og:image は絶対URLでないと効きません。URLを入れてから貼ってください。</p>
+  <p class="note ok" id="pathNote"></p>
   <p class="hint" style="margin:14px 0 6px">site.webmanifest の中身</p>
   <pre id="manifest">-</pre>
 </section>
@@ -528,9 +529,9 @@
     if (state.site.name) m.name = state.site.name;              // 空文字のキーは出さない
     if (state.site.short) m.short_name = state.site.short;
     m.icons = [
-      { src: '/android-chrome-192x192.png', sizes: '192x192', type: 'image/png' },
-      { src: '/android-chrome-512x512.png', sizes: '512x512', type: 'image/png' },
-      { src: '/maskable-512x512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' }
+      { src: assetUrl('android-chrome-192x192.png'), sizes: '192x192', type: 'image/png' },
+      { src: assetUrl('android-chrome-512x512.png'), sizes: '512x512', type: 'image/png' },
+      { src: assetUrl('maskable-512x512.png'), sizes: '512x512', type: 'image/png', purpose: 'maskable' }
     ];
     m.theme_color = state.site.theme;
     m.background_color = state.bg || '#ffffff';
@@ -543,16 +544,31 @@
       .replace(/"/g, '&quot;');
   }
 
+  // ファイルを置く場所から、タグに書くパスを決める。
+  // サイトURLにパスがあれば（例 https://example.com/tool/）そのパスを前に付ける。
+  // 常に絶対パス（/favicon.ico）にすると、サブディレクトリのサイトで全部404になる。
+  function assetBase() {
+    var u = String(state.site.url || '').trim();
+    if (!u) return '';                       // URL未入力 → 相対パス（同じフォルダにある前提）
+    try {
+      var path = new URL(u).pathname || '/';
+      if (path.charAt(path.length - 1) !== '/') path += '/';
+      return path;                           // '/' か '/tool/'
+    } catch (e) { return ''; }
+  }
+
+  function assetUrl(name) { return assetBase() + name; }
+
   function buildTags() {
     var base = state.site.url.replace(/\/+$/, '') || '&lt;サイトURL&gt;';
     var t = state.og.title.replace(/\r?\n/g, ' ').trim();
     var d = state.og.sub.replace(/\r?\n/g, ' ').trim();
     var L = [
-      '&lt;link rel="icon" href="/favicon.ico" sizes="any"&gt;',
-      '&lt;link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png"&gt;',
-      '&lt;link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"&gt;',
-      '&lt;link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"&gt;',
-      '&lt;link rel="manifest" href="/site.webmanifest"&gt;',
+      '&lt;link rel="icon" href="' + assetUrl('favicon.ico') + '" sizes="any"&gt;',
+      '&lt;link rel="icon" type="image/png" sizes="32x32" href="' + assetUrl('favicon-32x32.png') + '"&gt;',
+      '&lt;link rel="icon" type="image/png" sizes="16x16" href="' + assetUrl('favicon-16x16.png') + '"&gt;',
+      '&lt;link rel="apple-touch-icon" sizes="180x180" href="' + assetUrl('apple-touch-icon.png') + '"&gt;',
+      '&lt;link rel="manifest" href="' + assetUrl('site.webmanifest') + '"&gt;',
       '&lt;meta name="theme-color" content="' + esc(state.site.theme) + '"&gt;',
       '',
       '&lt;meta property="og:title" content="' + esc(t) + '"&gt;',
@@ -683,6 +699,12 @@
     renderOg($('ogPreview'));
     $('build').disabled = !state.img;
     $('urlNote').hidden = !!state.site.url;
+    var b = assetBase();
+    $('pathNote').textContent = b === ''
+      ? 'ファイルの置き場所：HTMLと同じフォルダ（相対パス）。サイトのURLを入れると、その場所に合わせたパスで出します。'
+      : b === '/'
+        ? 'ファイルの置き場所：サイトのルート直下（' + b + 'favicon.ico の形で出します）。'
+        : 'ファイルの置き場所：' + b + '（' + b + 'favicon.ico の形で出します）。サブディレクトリなので、ルート直下にすると404になります。';
   }
 
   function renderFiles() {
@@ -1086,6 +1108,35 @@
           shown.length === 0,
           shown.length === 0 ? hid.length + '要素すべて非表示' :
             '見えている: ' + shown.map(function (e) { return '#' + e.id; }).join(','));
+
+        // ---------- 置き場所に応じたパス ----------
+        state.site.url = '';
+        ok('パス：サイトURLが未入力なら相対パス（favicon.ico）',
+          assetUrl('favicon.ico') === 'favicon.ico' &&
+          tagsPlain().indexOf('href="favicon.ico"') >= 0, assetUrl('favicon.ico'));
+
+        state.site.url = 'https://example.com';
+        ok('パス：ルート直下のサイトなら /favicon.ico',
+          assetUrl('favicon.ico') === '/favicon.ico', assetUrl('favicon.ico'));
+
+        state.site.url = 'https://kaz-ma.github.io/imgset/';
+        ok('パス：サブディレクトリなら /imgset/favicon.ico',
+          assetUrl('favicon.ico') === '/imgset/favicon.ico', assetUrl('favicon.ico'));
+
+        state.site.url = 'https://kaz-ma.github.io/imgset';
+        ok('パス：末尾スラッシュの有無で結果が変わらない',
+          assetUrl('favicon.ico') === '/imgset/favicon.ico', assetUrl('favicon.ico'));
+
+        ok('パス：webmanifest の icons も同じ基準になる',
+          JSON.parse(buildManifest()).icons[0].src === '/imgset/android-chrome-192x192.png',
+          JSON.parse(buildManifest()).icons[0].src);
+
+        ok('パス：og:image は絶対URLのまま（相対だとSNSが読めない）',
+          tagsPlain().indexOf('og:image" content="https://kaz-ma.github.io/imgset/og-image.png"') >= 0);
+
+        state.site.url = 'ちゃんとしたURLではない文字列';
+        ok('パス：URLとして壊れていても落ちず、相対パスに戻る',
+          assetUrl('favicon.ico') === 'favicon.ico', assetUrl('favicon.ico'));
 
         // ---------- 外部通信 ----------
         var ext = externalRequests();
