@@ -1,0 +1,1158 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>favicon・OG画像 一式ジェネレーター ─ 画像1枚からアイコンとタグを出す</title>
+<meta name="description" content="画像を1枚入れるだけで、favicon.ico・apple-touch-icon・OG画像など10ファイルと、貼り付け用の link / meta タグを生成します。外部送信ゼロ・ブラウザ内で完結。">
+
+<!-- アイコンとOG画像は logo.svg から生成（week-04-favicon一式の仕様）。
+     GitHub Pages のプロジェクトページは /favicon-set/ 配下なので、パスは相対で書く。 -->
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+<meta name="theme-color" content="#2f6fd0">
+
+<meta property="og:title" content="favicon・OG画像 一式ジェネレーター ─ 画像1枚からアイコンとタグを出す">
+<meta property="og:description" content="画像を1枚入れるだけで、favicon.ico・apple-touch-icon・OG画像など10ファイルと、貼り付け用の link / meta タグを生成します。外部送信ゼロ・ブラウザ内で完結。">
+<meta property="og:image" content="https://kaz-ma.github.io/favicon-set/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://kaz-ma.github.io/favicon-set/">
+<meta name="twitter:card" content="summary_large_image">
+
+<style>
+  :root{
+    --bg:#0f1115; --panel:#171a21; --panel2:#1e222b; --line:#2b3140;
+    --fg:#e8ecf3; --dim:#9aa4b5; --accent:#5b9dff; --ok:#39b87a; --warn:#e0a33c; --ng:#e05c5c;
+    --r:10px;
+  }
+  *{box-sizing:border-box}
+  /* hidden属性は、クラス側のdisplay指定に負ける。UAスタイルは作者スタイルより弱いため。 */
+  [hidden]{display:none !important}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--bg); color:var(--fg);
+    font-family:system-ui,-apple-system,"Segoe UI","Yu Gothic UI","Meiryo","Hiragino Sans",sans-serif;
+    font-size:15px; line-height:1.7; padding:0 16px 80px;
+  }
+  .wrap{max-width:980px;margin:0 auto}
+  header{padding:28px 0 20px;border-bottom:1px solid var(--line);margin-bottom:24px}
+  h1{font-size:22px;margin:0 0 6px;letter-spacing:.02em}
+  .lead{color:var(--dim);font-size:14px;margin:0}
+  .badge{display:inline-block;margin-top:10px;padding:3px 10px;border:1px solid var(--ok);
+    color:var(--ok);border-radius:999px;font-size:12px}
+  section{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);
+    padding:18px 18px 20px;margin-bottom:18px}
+  h2{font-size:15px;margin:0 0 14px;display:flex;align-items:center;gap:8px}
+  h2 .n{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;
+    background:var(--accent);color:#06101f;font-size:12px;font-weight:700;flex:none}
+  .hint{color:var(--dim);font-size:13px;margin:0 0 12px}
+  #drop{border:2px dashed var(--line);border-radius:var(--r);padding:34px 16px;text-align:center;
+    cursor:pointer;transition:.15s}
+  #drop:hover,#drop.over{border-color:var(--accent);background:var(--panel2)}
+  #drop p{margin:0;color:var(--dim);font-size:14px}
+  #drop b{color:var(--fg)}
+  .grid{display:grid;gap:14px}
+  .g2{grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
+  .g3{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+  label{display:block;font-size:13px;color:var(--dim);margin-bottom:5px}
+  input[type=text],input[type=number],select,textarea{
+    width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--fg);
+    border-radius:7px;padding:8px 10px;font:inherit;font-size:14px}
+  input[type=color]{width:100%;height:36px;background:var(--panel2);border:1px solid var(--line);
+    border-radius:7px;padding:3px}
+  input[type=range]{width:100%}
+  textarea{resize:vertical;min-height:62px}
+  .row{display:flex;gap:8px;align-items:center}
+  .row>*{flex:1}
+  .chk{display:flex;align-items:center;gap:7px;color:var(--fg);font-size:14px;margin:0}
+  .chk input{flex:none;width:auto}
+  button{background:var(--accent);color:#06101f;border:0;border-radius:7px;padding:9px 16px;
+    font:inherit;font-weight:700;cursor:pointer}
+  button:hover{filter:brightness(1.1)}
+  button[disabled]{opacity:.4;cursor:not-allowed;filter:none}
+  button.ghost{background:transparent;border:1px solid var(--line);color:var(--fg);font-weight:500}
+  button.ghost:hover{border-color:var(--accent);filter:none}
+  .srcinfo{display:flex;gap:16px;align-items:center;margin-top:14px;flex-wrap:wrap}
+  .srcinfo canvas{border:1px solid var(--line);border-radius:7px;background:
+    conic-gradient(#2a2f3a 0 25%,#232832 0 50%,#2a2f3a 0 75%,#232832 0) 0 0/16px 16px}
+  .srcinfo dl{margin:0;font-size:13px;color:var(--dim)}
+  .srcinfo dl div{display:flex;gap:8px}
+  .srcinfo dt{min-width:4.5em}
+  .srcinfo dd{margin:0;color:var(--fg)}
+  .previews{display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end;margin-top:4px}
+  .pv{text-align:center}
+  .pv canvas{border:1px solid var(--line);border-radius:5px;display:block;background:
+    conic-gradient(#2a2f3a 0 25%,#232832 0 50%,#2a2f3a 0 75%,#232832 0) 0 0/10px 10px}
+  .pv span{display:block;font-size:11px;color:var(--dim);margin-top:5px}
+  #ogPreview{width:100%;max-width:600px;border:1px solid var(--line);border-radius:7px;display:block}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:middle}
+  th{color:var(--dim);font-weight:500;font-size:12px}
+  td.num{text-align:right;color:var(--dim);font-variant-numeric:tabular-nums}
+  .files img{width:32px;height:32px;object-fit:contain;display:block;border-radius:4px;background:
+    conic-gradient(#2a2f3a 0 25%,#232832 0 50%,#2a2f3a 0 75%,#232832 0) 0 0/8px 8px}
+  .files code{font-size:12px}
+  pre{background:var(--panel2);border:1px solid var(--line);border-radius:7px;padding:12px;
+    overflow:auto;font-size:12.5px;line-height:1.6;margin:0}
+  .note{border-left:3px solid var(--warn);padding:2px 0 2px 12px;color:var(--warn);font-size:13px;margin:12px 0 0}
+  .note.ok{border-color:var(--ok);color:var(--ok)}
+  .note.ng{border-color:var(--ng);color:var(--ng)}
+  .actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:14px}
+  .sub{color:var(--dim);font-size:12.5px}
+  .tl{list-style:none;padding:0;margin:12px 0 0;font-size:13px}
+  .tl li{display:flex;gap:9px;padding:5px 0;border-bottom:1px solid var(--line);align-items:flex-start}
+  .tl li:last-child{border-bottom:0}
+  .tl .mk{flex:none;width:1.4em;font-weight:700}
+  .tl .pass .mk{color:var(--ok)} .tl .fail .mk{color:var(--ng)}
+  .tl .d{color:var(--dim);font-size:12px}
+  .summary{font-size:14px;font-weight:700;margin:0 0 4px}
+  @media (max-width:560px){ body{font-size:14px} h1{font-size:19px} .srcinfo{gap:12px} }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>favicon・OG画像 一式ジェネレーター</h1>
+  <p class="lead">画像を1枚入れると、HP制作で毎回必要なアイコン10種とOG画像、貼り付け用タグまで出ます。</p>
+  <span class="badge" id="netBadge">外部送信ゼロ（確認中）</span>
+</header>
+
+<section>
+  <h2><span class="n">1</span>元画像を入れる</h2>
+  <p class="hint">PNG / JPEG / WebP / SVG / GIF / AVIF。正方形でなければ短辺に合わせて中央で切り取ります。</p>
+  <div id="drop" tabindex="0" role="button">
+    <p><b>ここにドロップ</b>、またはクリックして選択</p>
+  </div>
+  <input type="file" id="file" accept="image/*" hidden>
+  <div class="srcinfo" id="srcInfo" hidden>
+    <canvas id="srcCanvas" width="96" height="96"></canvas>
+    <dl>
+      <div><dt>ファイル</dt><dd id="iName">-</dd></div>
+      <div><dt>形式</dt><dd id="iType">-</dd></div>
+      <div><dt>寸法</dt><dd id="iDim">-</dd></div>
+      <div><dt>容量</dt><dd id="iSize">-</dd></div>
+    </dl>
+  </div>
+  <p class="note" id="srcNote" hidden></p>
+</section>
+
+<section>
+  <h2><span class="n">2</span>アイコンの調整</h2>
+  <div class="grid g3">
+    <div>
+      <label for="bgMode">背景</label>
+      <select id="bgMode">
+        <option value="none">透過</option>
+        <option value="color">色を敷く</option>
+      </select>
+    </div>
+    <div>
+      <label for="bgColor">背景色</label>
+      <input type="color" id="bgColor" value="#ffffff" disabled>
+    </div>
+    <div>
+      <label for="padding">余白 <span id="padVal">0</span>%</label>
+      <input type="range" id="padding" min="0" max="40" step="1" value="0">
+    </div>
+    <div>
+      <label for="radius">角丸 <span id="radVal">0</span>%</label>
+      <input type="range" id="radius" min="0" max="100" step="1" value="0">
+    </div>
+  </div>
+  <div class="previews" id="iconPreviews"></div>
+  <p class="note" id="appleNote" hidden>
+    apple-touch-icon だけは白を敷きます。iOSは透過部分を黒で塗るため、透過のままだと暗いロゴが消えます。
+  </p>
+</section>
+
+<section>
+  <h2><span class="n">3</span>OG画像を作る</h2>
+  <p class="hint">1200×630。SNSでシェアされたときに出る画像です。</p>
+  <div class="grid g2">
+    <div>
+      <label for="ogTitle">タイトル</label>
+      <textarea id="ogTitle" placeholder="例：株式会社◯◯ 公式サイト"></textarea>
+    </div>
+    <div>
+      <label for="ogSub">サブタイトル</label>
+      <textarea id="ogSub" placeholder="例：東京都千代田区の設計事務所"></textarea>
+    </div>
+  </div>
+  <div class="grid g3" style="margin-top:14px">
+    <div>
+      <label for="ogBgMode">背景</label>
+      <select id="ogBgMode">
+        <option value="solid">単色</option>
+        <option value="image">元画像を敷く</option>
+      </select>
+    </div>
+    <div><label for="ogBgColor">背景色</label><input type="color" id="ogBgColor" value="#111827"></div>
+    <div><label for="ogColor">文字色</label><input type="color" id="ogColor" value="#ffffff"></div>
+    <div>
+      <label for="ogDim">暗幕 <span id="dimVal">40</span>%</label>
+      <input type="range" id="ogDim" min="0" max="80" step="1" value="40" disabled>
+    </div>
+    <div>
+      <label for="ogLogoPos">ロゴの位置</label>
+      <select id="ogLogoPos">
+        <option value="none">置かない</option>
+        <option value="left-top">左上</option><option value="center-top">中央上</option>
+        <option value="right-top">右上</option><option value="left-middle">左中</option>
+        <option value="center-middle">中央</option><option value="right-middle">右中</option>
+        <option value="left-bottom" selected>左下</option><option value="center-bottom">中央下</option>
+        <option value="right-bottom">右下</option>
+      </select>
+    </div>
+    <div><label for="ogLogoSize">ロゴのサイズ(px)</label><input type="number" id="ogLogoSize" value="120" min="16" max="400" step="4"></div>
+    <div><label for="ogTitleSize">タイトル(px)</label><input type="number" id="ogTitleSize" value="64" min="20" max="140" step="2"></div>
+    <div><label for="ogSubSize">サブ(px)</label><input type="number" id="ogSubSize" value="32" min="14" max="80" step="2"></div>
+    <div>
+      <label for="ogAlign">文字の寄せ</label>
+      <select id="ogAlign"><option value="center">中央</option><option value="left">左</option></select>
+    </div>
+  </div>
+  <p class="chk" style="margin-top:12px"><input type="checkbox" id="ogShadow" checked><label for="ogShadow" style="margin:0">文字に影をつける（背景が明るいときに読みやすくなる）</label></p>
+  <canvas id="ogPreview" width="1200" height="630" style="margin-top:14px"></canvas>
+</section>
+
+<section>
+  <h2><span class="n">4</span>サイトの情報</h2>
+  <p class="hint">webmanifest と貼り付け用タグに入ります。空欄でも書き出せます。</p>
+  <div class="grid g2">
+    <div><label for="siteName">サイト名</label><input type="text" id="siteName" placeholder="株式会社◯◯"></div>
+    <div><label for="siteShort">短い名前（ホーム画面用・12文字程度）</label><input type="text" id="siteShort" placeholder="◯◯"></div>
+    <div><label for="siteUrl">サイトのURL（og:image に必要）</label><input type="text" id="siteUrl" placeholder="https://example.com"></div>
+    <div><label for="themeColor">テーマ色（スマホのアドレスバー）</label><input type="color" id="themeColor" value="#ffffff"></div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="n">5</span>書き出す</h2>
+  <div class="actions">
+    <button id="build" disabled>一式を作る</button>
+    <button id="dlAll" class="ghost" disabled>全部ダウンロード</button>
+    <span class="sub" id="dlProgress"></span>
+  </div>
+  <div id="fileWrap" hidden style="margin-top:16px">
+    <table class="files">
+      <thead><tr><th style="width:44px"></th><th>ファイル名</th><th>寸法</th><th class="num">容量</th><th style="width:1%"></th></tr></thead>
+      <tbody id="fileRows"></tbody>
+    </table>
+    <p class="sub" style="margin-top:10px">ブラウザが連続ダウンロードを止めることがあります。止まったら各行のボタンで個別に取れます。</p>
+  </div>
+</section>
+
+<section>
+  <h2><span class="n">6</span>貼り付け用コード</h2>
+  <p class="hint">&lt;head&gt; の中に貼ってください。ファイルはサイトのルートに置く前提です。</p>
+  <div class="actions" style="margin:0 0 12px">
+    <button id="copyTags" class="ghost">コピー</button>
+    <span class="sub" id="copyMsg"></span>
+  </div>
+  <pre id="tags">画像を入れて「一式を作る」を押してください。</pre>
+  <p class="note" id="urlNote" hidden>サイトのURLが未入力です。og:image は絶対URLでないと効きません。URLを入れてから貼ってください。</p>
+  <p class="hint" style="margin:14px 0 6px">site.webmanifest の中身</p>
+  <pre id="manifest">-</pre>
+</section>
+
+<section>
+  <h2><span class="n">7</span>セルフチェック</h2>
+  <p class="hint">このツール自身の検査です。画像を入れなくても実行できます（検査用の画像を内部で作ります）。</p>
+  <div class="actions" style="margin:0">
+    <button id="runTests" class="ghost">検査を実行</button>
+    <span class="sub" id="testTime"></span>
+  </div>
+  <p class="summary" id="testSummary" hidden></p>
+  <ul class="tl" id="testList"></ul>
+</section>
+
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  var FONT = 'system-ui, -apple-system, "Segoe UI", "Yu Gothic UI", "Yu Gothic", "Meiryo", "Hiragino Sans", sans-serif';
+  var OG_W = 1200, OG_H = 630, OG_PAD = 96, OG_MAX_TEXT = OG_W - OG_PAD * 2; // 1008
+  var LOGO_MARGIN = 48;
+  var PNG_SIG = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A];
+
+  var $ = function (id) { return document.getElementById(id); };
+
+  var state = {
+    img: null,
+    src: null,              // {name,type,w,h,bytes}
+    bg: '',                 // '' = 透過
+    padding: 0,
+    radius: 0,
+    og: {
+      title: '', sub: '', color: '#ffffff', bgMode: 'solid', bgColor: '#111827',
+      dim: 40, logoPos: 'left-bottom', logoSize: 120, titleSize: 64, subSize: 32,
+      align: 'center', shadow: true
+    },
+    site: { name: '', short: '', url: '', theme: '#ffffff' },
+    outputs: []
+  };
+
+  // ============================================================
+  // 1. 寸法の取り出し（SVGは寸法を持たないことがある）
+  // ============================================================
+  function natW(img) { return (img && img.naturalWidth) || (img && img._fw) || 512; }
+  function natH(img) { return (img && img.naturalHeight) || (img && img._fh) || 512; }
+
+  // SVGのテキストから寸法を読み、無ければ注入する。
+  // 寸法を持たないSVGをcanvasに描くと0px扱いになるブラウザがあるため。
+  function prepareSvg(text) {
+    var w = 0, h = 0;
+    var vb = text.match(/viewBox\s*=\s*["']\s*([-\d.eE]+)[\s,]+([-\d.eE]+)[\s,]+([\d.eE]+)[\s,]+([\d.eE]+)/);
+    if (vb) { w = parseFloat(vb[3]); h = parseFloat(vb[4]); }
+    var mw = text.match(/<svg[^>]*\swidth\s*=\s*["']\s*([\d.]+)/);
+    var mh = text.match(/<svg[^>]*\sheight\s*=\s*["']\s*([\d.]+)/);
+    if (mw && mh) { w = parseFloat(mw[1]); h = parseFloat(mh[1]); }
+    if (!(w > 0) || !(h > 0)) { w = 512; h = 512; }
+    var out = text;
+    if (!mw || !mh) {
+      out = text.replace(/<svg\b/i, '<svg width="' + w + '" height="' + h + '"');
+    }
+    return { text: out, w: w, h: h };
+  }
+
+  // ============================================================
+  // 2. 描画の土台
+  // ============================================================
+  // 正方形の枠に、短辺合わせ・中央切り取りで描く
+  function drawSquare(ctx, img, x, y, w, h) {
+    var iw = natW(img), ih = natH(img);
+    var s = Math.min(iw, ih);
+    ctx.drawImage(img, (iw - s) / 2, (ih - s) / 2, s, s, x, y, w, h);
+  }
+
+  // 任意の矩形に、はみ出す側を切ってcover配置で描く
+  function drawCover(ctx, img, x, y, w, h) {
+    var iw = natW(img), ih = natH(img);
+    var sc = Math.max(w / iw, h / ih);
+    var dw = iw * sc, dh = ih * sc;
+    ctx.drawImage(img, x + (w - dw) / 2, y + (h - dh) / 2, dw, dh);
+  }
+
+  function roundRectPath(ctx, x, y, w, h, r) {
+    r = Math.max(0, Math.min(r, Math.min(w, h) / 2));
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y); ctx.arcTo(x + w, y, x + w, y + r, r);
+    ctx.lineTo(x + w, y + h - r); ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
+    ctx.lineTo(x + r, y + h); ctx.arcTo(x, y + h, x, y + h - r, r);
+    ctx.lineTo(x, y + r); ctx.arcTo(x, y, x + r, y, r);
+    ctx.closePath();
+  }
+
+  // opts: {bg, padding, radius, forceBg, safe}
+  function renderIcon(size, opts) {
+    var c = document.createElement('canvas');
+    c.width = size; c.height = size;
+    var ctx = c.getContext('2d');
+
+    // 角丸は背景を塗る前にクリップする。順番を逆にすると四隅に背景が残る。
+    if (opts.radius > 0) {
+      roundRectPath(ctx, 0, 0, size, size, size * (opts.radius / 100) / 2);
+      ctx.clip();
+    }
+    var bg = opts.bg;
+    if (!bg && opts.forceBg) bg = '#ffffff';
+    if (bg) { ctx.fillStyle = bg; ctx.fillRect(0, 0, size, size); }
+
+    // maskable は余白の設定とは独立に、常に中央80%へ収める
+    var ratio = opts.safe ? 0.8 : (1 - opts.padding / 100 * 2);
+    if (ratio < 0) ratio = 0;
+    var d = size * ratio;
+    if (d > 0 && state.img) drawSquare(ctx, state.img, (size - d) / 2, (size - d) / 2, d, d);
+    return c;
+  }
+
+  // ============================================================
+  // 3. ICO の組み立て
+  // ============================================================
+  function toBlob(canvas) {
+    return new Promise(function (res) { canvas.toBlob(function (b) { res(b); }, 'image/png'); });
+  }
+  function toBytes(blob) {
+    return blob.arrayBuffer().then(function (ab) { return new Uint8Array(ab); });
+  }
+
+  function assembleIco(pngList) {
+    var n = pngList.length;
+    var head = 6 + 16 * n;
+    var total = head;
+    for (var i = 0; i < n; i++) total += pngList[i].bytes.length;
+
+    var buf = new ArrayBuffer(total);
+    var dv = new DataView(buf), u8 = new Uint8Array(buf);
+    dv.setUint16(0, 0, true);   // reserved
+    dv.setUint16(2, 1, true);   // type = icon
+    dv.setUint16(4, n, true);   // count
+
+    var off = head;
+    for (i = 0; i < n; i++) {
+      var e = 6 + 16 * i, sz = pngList[i].size, by = pngList[i].bytes;
+      u8[e] = sz >= 256 ? 0 : sz;       // width（256は0で表す）
+      u8[e + 1] = sz >= 256 ? 0 : sz;   // height
+      u8[e + 2] = 0;                    // colorCount
+      u8[e + 3] = 0;                    // reserved
+      dv.setUint16(e + 4, 1, true);     // planes
+      dv.setUint16(e + 6, 32, true);    // bitCount
+      dv.setUint32(e + 8, by.length, true);
+      dv.setUint32(e + 12, off, true);
+      u8.set(by, off);
+      off += by.length;
+    }
+    return { blob: new Blob([buf], { type: 'image/x-icon' }), bytes: u8 };
+  }
+
+  function buildIco(sizes) {
+    var canvases = sizes.map(function (s) {
+      return { size: s, canvas: renderIcon(s, { bg: state.bg, padding: state.padding, radius: state.radius }) };
+    });
+    return Promise.all(canvases.map(function (o) {
+      return toBlob(o.canvas).then(toBytes).then(function (b) { return { size: o.size, bytes: b }; });
+    })).then(assembleIco);
+  }
+
+  // ============================================================
+  // 4. 文字の折り返し
+  // ============================================================
+  function wrapLines(ctx, text, maxWidth) {
+    var out = [];
+    if (text == null || text === '') return out;
+    var paras = String(text).split(/\r?\n/);
+
+    for (var p = 0; p < paras.length; p++) {
+      var para = paras[p];
+      if (para === '') { out.push(''); continue; }
+
+      // 空白で切る。空白そのものも残しておき、行末で落とす。
+      var tokens = para.split(/(\s+)/).filter(function (t) { return t !== ''; });
+      var line = '';
+
+      for (var i = 0; i < tokens.length; i++) {
+        var tk = tokens[i];
+        if (/^\s+$/.test(tk)) { if (line !== '') line += tk; continue; }
+
+        // トークン1つで最大幅を超える（日本語の長文、長いURL）→ 文字単位で割る
+        if (ctx.measureText(tk).width > maxWidth) {
+          for (var k = 0; k < tk.length; k++) {
+            var ch = tk.charAt(k);
+            if (line !== '' && ctx.measureText(line + ch).width > maxWidth) {
+              out.push(line.replace(/\s+$/, '')); line = ch;
+            } else line += ch;
+          }
+          continue;
+        }
+        var cand = (line === '') ? tk : line + tk;
+        if (ctx.measureText(cand).width > maxWidth && line !== '') {
+          out.push(line.replace(/\s+$/, '')); line = tk;
+        } else line = cand;
+      }
+      if (line !== '') out.push(line.replace(/\s+$/, ''));
+    }
+    return out;
+  }
+
+  // ============================================================
+  // 5. OG画像
+  // ============================================================
+  function renderOg(targetCanvas) {
+    var c = targetCanvas || document.createElement('canvas');
+    c.width = OG_W; c.height = OG_H;
+    var ctx = c.getContext('2d');
+    var o = state.og;
+
+    ctx.clearRect(0, 0, OG_W, OG_H);
+    ctx.fillStyle = o.bgColor;
+    ctx.fillRect(0, 0, OG_W, OG_H);
+
+    if (o.bgMode === 'image' && state.img) {
+      drawCover(ctx, state.img, 0, 0, OG_W, OG_H);
+      if (o.dim > 0) {
+        ctx.fillStyle = 'rgba(0,0,0,' + (o.dim / 100) + ')';
+        ctx.fillRect(0, 0, OG_W, OG_H);
+      }
+    }
+
+    // ロゴを先に描く。文字と重なったとき、文字を上に残したいため。
+    if (o.logoPos !== 'none' && o.logoSize > 0 && state.img) {
+      var ls = o.logoSize;
+      var parts = o.logoPos.split('-');
+      var xs = { left: LOGO_MARGIN, center: (OG_W - ls) / 2, right: OG_W - LOGO_MARGIN - ls };
+      var ys = { top: LOGO_MARGIN, middle: (OG_H - ls) / 2, bottom: OG_H - LOGO_MARGIN - ls };
+      drawSquare(ctx, state.img, xs[parts[0]], ys[parts[1]], ls, ls);
+    }
+
+    // 文字
+    ctx.textBaseline = 'top';
+    ctx.font = 'bold ' + o.titleSize + 'px ' + FONT;
+    var tl = wrapLines(ctx, o.title, OG_MAX_TEXT);
+    ctx.font = o.subSize + 'px ' + FONT;
+    var sl = wrapLines(ctx, o.sub, OG_MAX_TEXT);
+
+    var lh1 = o.titleSize * 1.3, lh2 = o.subSize * 1.45, gap = 24;
+    var totalH = tl.length * lh1 + (sl.length ? gap + sl.length * lh2 : 0);
+    var y = (OG_H - totalH) / 2;
+
+    ctx.fillStyle = o.color;
+    ctx.textAlign = o.align === 'left' ? 'left' : 'center';
+    var x = o.align === 'left' ? OG_PAD : OG_W / 2;
+    if (o.shadow) {
+      ctx.shadowColor = 'rgba(0,0,0,.5)'; ctx.shadowBlur = 8; ctx.shadowOffsetY = 2;
+    }
+    ctx.font = 'bold ' + o.titleSize + 'px ' + FONT;
+    for (var i = 0; i < tl.length; i++) { ctx.fillText(tl[i], x, y); y += lh1; }
+    if (sl.length) {
+      y += gap;
+      ctx.font = o.subSize + 'px ' + FONT;
+      for (i = 0; i < sl.length; i++) { ctx.fillText(sl[i], x, y); y += lh2; }
+    }
+    ctx.shadowColor = 'transparent'; ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
+    return c;
+  }
+
+  // ============================================================
+  // 6. webmanifest と貼り付けタグ
+  // ============================================================
+  function buildManifest() {
+    var m = {};
+    if (state.site.name) m.name = state.site.name;              // 空文字のキーは出さない
+    if (state.site.short) m.short_name = state.site.short;
+    m.icons = [
+      { src: '/android-chrome-192x192.png', sizes: '192x192', type: 'image/png' },
+      { src: '/android-chrome-512x512.png', sizes: '512x512', type: 'image/png' },
+      { src: '/maskable-512x512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' }
+    ];
+    m.theme_color = state.site.theme;
+    m.background_color = state.bg || '#ffffff';
+    m.display = 'standalone';
+    return JSON.stringify(m, null, 2);
+  }
+
+  function esc(s) {
+    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  function buildTags() {
+    var base = state.site.url.replace(/\/+$/, '') || '&lt;サイトURL&gt;';
+    var t = state.og.title.replace(/\r?\n/g, ' ').trim();
+    var d = state.og.sub.replace(/\r?\n/g, ' ').trim();
+    var L = [
+      '&lt;link rel="icon" href="/favicon.ico" sizes="any"&gt;',
+      '&lt;link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png"&gt;',
+      '&lt;link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"&gt;',
+      '&lt;link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"&gt;',
+      '&lt;link rel="manifest" href="/site.webmanifest"&gt;',
+      '&lt;meta name="theme-color" content="' + esc(state.site.theme) + '"&gt;',
+      '',
+      '&lt;meta property="og:title" content="' + esc(t) + '"&gt;',
+      '&lt;meta property="og:description" content="' + esc(d) + '"&gt;',
+      '&lt;meta property="og:image" content="' + base + '/og-image.png"&gt;',
+      '&lt;meta property="og:image:width" content="1200"&gt;',
+      '&lt;meta property="og:image:height" content="630"&gt;',
+      '&lt;meta property="og:type" content="website"&gt;',
+      '&lt;meta property="og:url" content="' + base + '"&gt;',
+      '&lt;meta name="twitter:card" content="summary_large_image"&gt;'
+    ];
+    return L.join('\n');
+  }
+
+  function tagsPlain() {
+    var tmp = document.createElement('div');
+    tmp.innerHTML = buildTags();
+    return tmp.textContent;
+  }
+
+  // ============================================================
+  // 7. 一式を作る
+  // ============================================================
+  var SPEC = [
+    { name: 'favicon-16x16.png', size: 16 },
+    { name: 'favicon-32x32.png', size: 32 },
+    { name: 'favicon-48x48.png', size: 48 },
+    { name: 'apple-touch-icon.png', size: 180, forceBg: true },
+    { name: 'android-chrome-192x192.png', size: 192 },
+    { name: 'android-chrome-512x512.png', size: 512 },
+    { name: 'maskable-512x512.png', size: 512, forceBg: true, safe: true }
+  ];
+
+  function buildAll() {
+    var outs = [];
+    var jobs = SPEC.map(function (s) {
+      var c = renderIcon(s.size, {
+        bg: state.bg, padding: state.padding, radius: state.radius,
+        forceBg: !!s.forceBg, safe: !!s.safe
+      });
+      return toBlob(c).then(function (b) {
+        outs.push({ name: s.name, blob: b, dim: s.size + '×' + s.size, canvas: c });
+      });
+    });
+
+    return Promise.all(jobs)
+      .then(function () { return buildIco([16, 32, 48]); })
+      .then(function (ico) {
+        outs.push({ name: 'favicon.ico', blob: ico.blob, dim: '16・32・48', bytes: ico.bytes });
+        return toBlob(renderOg());
+      })
+      .then(function (b) {
+        outs.push({ name: 'og-image.png', blob: b, dim: OG_W + '×' + OG_H });
+        outs.push({
+          name: 'site.webmanifest',
+          blob: new Blob([buildManifest()], { type: 'application/manifest+json' }),
+          dim: '-'
+        });
+        // 表示順をSPECの順＋ico＋og＋manifestに整える
+        var order = ['favicon.ico', 'favicon-16x16.png', 'favicon-32x32.png', 'favicon-48x48.png',
+          'apple-touch-icon.png', 'android-chrome-192x192.png', 'android-chrome-512x512.png',
+          'maskable-512x512.png', 'og-image.png', 'site.webmanifest'];
+        outs.sort(function (a, b2) { return order.indexOf(a.name) - order.indexOf(b2.name); });
+        state.outputs.forEach(function (o) { if (o.url) URL.revokeObjectURL(o.url); });
+        outs.forEach(function (o) { o.url = URL.createObjectURL(o.blob); });
+        state.outputs = outs;
+        return outs;
+      });
+  }
+
+  // ============================================================
+  // 8. 画面の配線
+  // ============================================================
+  function fmtBytes(n) {
+    if (n < 1024) return n + ' B';
+    if (n < 1024 * 1024) return (n / 1024).toFixed(1) + ' KB';
+    return (n / 1024 / 1024).toFixed(2) + ' MB';
+  }
+
+  function readState() {
+    state.bg = $('bgMode').value === 'color' ? $('bgColor').value : '';
+    state.padding = +$('padding').value;
+    state.radius = +$('radius').value;
+    var o = state.og;
+    o.title = $('ogTitle').value; o.sub = $('ogSub').value;
+    o.color = $('ogColor').value; o.bgMode = $('ogBgMode').value;
+    o.bgColor = $('ogBgColor').value; o.dim = +$('ogDim').value;
+    o.logoPos = $('ogLogoPos').value; o.logoSize = +$('ogLogoSize').value;
+    o.titleSize = +$('ogTitleSize').value; o.subSize = +$('ogSubSize').value;
+    o.align = $('ogAlign').value; o.shadow = $('ogShadow').checked;
+    var s = state.site;
+    s.name = $('siteName').value.trim(); s.short = $('siteShort').value.trim();
+    s.url = $('siteUrl').value.trim(); s.theme = $('themeColor').value;
+
+    $('bgColor').disabled = $('bgMode').value !== 'color';
+    $('ogDim').disabled = o.bgMode !== 'image';
+    $('padVal').textContent = state.padding;
+    $('radVal').textContent = state.radius;
+    $('dimVal').textContent = o.dim;
+    $('appleNote').hidden = !!state.bg;
+  }
+
+  var PREVIEW_SIZES = [16, 32, 48, 180];
+  function drawPreviews() {
+    var wrap = $('iconPreviews');
+    wrap.innerHTML = '';
+    if (!state.img) { wrap.innerHTML = '<p class="sub">画像を入れるとここに出ます。</p>'; return; }
+    PREVIEW_SIZES.forEach(function (s) {
+      var c = renderIcon(s, {
+        bg: state.bg, padding: state.padding, radius: state.radius,
+        forceBg: s === 180
+      });
+      var box = document.createElement('div');
+      box.className = 'pv';
+      c.style.width = Math.min(s, 72) + 'px';
+      c.style.height = Math.min(s, 72) + 'px';
+      box.appendChild(c);
+      var lab = document.createElement('span');
+      lab.textContent = s + 'px' + (s === 180 ? '（iOS）' : '');
+      box.appendChild(lab);
+      wrap.appendChild(box);
+    });
+  }
+
+  function refresh() {
+    readState();
+    drawPreviews();
+    renderOg($('ogPreview'));
+    $('build').disabled = !state.img;
+    $('urlNote').hidden = !!state.site.url;
+  }
+
+  function renderFiles() {
+    var tb = $('fileRows');
+    tb.innerHTML = '';
+    state.outputs.forEach(function (o) {
+      var tr = document.createElement('tr');
+
+      var td0 = document.createElement('td');
+      if (/\.(png|ico)$/.test(o.name)) {
+        var im = document.createElement('img');
+        im.src = o.url; im.alt = '';
+        td0.appendChild(im);
+      }
+      tr.appendChild(td0);
+
+      var td1 = document.createElement('td');
+      var code = document.createElement('code');
+      code.textContent = o.name;
+      td1.appendChild(code);
+      tr.appendChild(td1);
+
+      var td2 = document.createElement('td');
+      td2.textContent = o.dim;
+      tr.appendChild(td2);
+
+      var td3 = document.createElement('td');
+      td3.className = 'num';
+      td3.textContent = fmtBytes(o.blob.size);
+      tr.appendChild(td3);
+
+      var td4 = document.createElement('td');
+      var b = document.createElement('button');
+      b.className = 'ghost'; b.textContent = '保存';
+      b.addEventListener('click', function () { download(o); });
+      td4.appendChild(b);
+      tr.appendChild(td4);
+
+      tb.appendChild(tr);
+    });
+    $('fileWrap').hidden = false;
+  }
+
+  function download(o) {
+    var a = document.createElement('a');
+    a.href = o.url; a.download = o.name;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  }
+
+  // ZIPにしない。Macで作ったZIPがWindowsで文字化けする事故を踏んでいるため。
+  function downloadAll() {
+    var list = state.outputs.slice();
+    var i = 0;
+    $('dlAll').disabled = true;
+    (function step() {
+      if (i >= list.length) {
+        $('dlProgress').textContent = list.length + ' 件すべて送りました';
+        $('dlAll').disabled = false;
+        return;
+      }
+      download(list[i]);
+      i++;
+      $('dlProgress').textContent = i + ' / ' + list.length;
+      setTimeout(step, 150);
+    })();
+  }
+
+  function loadImage(src, fw, fh) {
+    return new Promise(function (res, rej) {
+      var im = new Image();
+      im.onload = function () { if (fw) { im._fw = fw; im._fh = fh; } res(im); };
+      im.onerror = function () { rej(new Error('画像として読めませんでした')); };
+      im.src = src;
+    });
+  }
+
+  function acceptFile(file) {
+    if (!file) return;
+    $('srcNote').hidden = true;
+    var isSvg = /svg/i.test(file.type) || /\.svg$/i.test(file.name);
+    var fr = new FileReader();
+
+    fr.onload = function () {
+      var p;
+      if (isSvg) {
+        var prep = prepareSvg(String(fr.result));
+        var url = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(prep.text);
+        p = loadImage(url, prep.w, prep.h);
+      } else {
+        p = loadImage(String(fr.result));
+      }
+      p.then(function (im) {
+        state.img = im;
+        state.src = {
+          name: file.name, type: file.type || '（不明）',
+          w: natW(im), h: natH(im), bytes: file.size
+        };
+        $('iName').textContent = state.src.name;
+        $('iType').textContent = state.src.type;
+        $('iDim').textContent = state.src.w + ' × ' + state.src.h + ' px';
+        $('iSize').textContent = fmtBytes(state.src.bytes);
+        var sc = $('srcCanvas'), sctx = sc.getContext('2d');
+        sctx.clearRect(0, 0, 96, 96);
+        drawSquare(sctx, im, 0, 0, 96, 96);
+        $('srcInfo').hidden = false;
+        if (state.src.w !== state.src.h) {
+          $('srcNote').textContent = '正方形ではありません（' + state.src.w + '×' + state.src.h +
+            '）。短辺に合わせて中央で切り取ります。';
+          $('srcNote').hidden = false;
+        }
+        refresh();
+      }).catch(function (e) {
+        $('srcNote').className = 'note ng';
+        $('srcNote').textContent = e.message;
+        $('srcNote').hidden = false;
+      });
+    };
+    if (isSvg) fr.readAsText(file); else fr.readAsDataURL(file);
+  }
+
+  var drop = $('drop');
+  drop.addEventListener('click', function () { $('file').click(); });
+  drop.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); $('file').click(); }
+  });
+  $('file').addEventListener('change', function (e) { acceptFile(e.target.files[0]); });
+  ['dragenter', 'dragover'].forEach(function (t) {
+    drop.addEventListener(t, function (e) { e.preventDefault(); drop.classList.add('over'); });
+  });
+  ['dragleave', 'drop'].forEach(function (t) {
+    drop.addEventListener(t, function (e) { e.preventDefault(); drop.classList.remove('over'); });
+  });
+  drop.addEventListener('drop', function (e) {
+    if (e.dataTransfer && e.dataTransfer.files) acceptFile(e.dataTransfer.files[0]);
+  });
+
+  ['bgMode', 'bgColor', 'padding', 'radius', 'ogTitle', 'ogSub', 'ogColor', 'ogBgMode',
+    'ogBgColor', 'ogDim', 'ogLogoPos', 'ogLogoSize', 'ogTitleSize', 'ogSubSize', 'ogAlign',
+    'ogShadow', 'siteName', 'siteShort', 'siteUrl', 'themeColor'].forEach(function (id) {
+      var el = $(id);
+      el.addEventListener('input', refresh);
+      el.addEventListener('change', refresh);
+    });
+
+  $('build').addEventListener('click', function () {
+    readState();
+    $('build').disabled = true;
+    $('build').textContent = '作成中…';
+    buildAll().then(function () {
+      renderFiles();
+      $('tags').innerHTML = buildTags();
+      $('manifest').textContent = buildManifest();
+      $('dlAll').disabled = false;
+      $('build').disabled = false;
+      $('build').textContent = '一式を作る';
+      $('dlProgress').textContent = '';
+    });
+  });
+
+  $('dlAll').addEventListener('click', downloadAll);
+
+  $('copyTags').addEventListener('click', function () {
+    var txt = tagsPlain();
+    var done = function () {
+      $('copyMsg').textContent = 'コピーしました';
+      setTimeout(function () { $('copyMsg').textContent = ''; }, 2000);
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(txt).then(done, function () { fallbackCopy(txt, done); });
+    } else fallbackCopy(txt, done);
+  });
+  function fallbackCopy(txt, done) {
+    var ta = document.createElement('textarea');
+    ta.value = txt; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); done(); } catch (e) { $('copyMsg').textContent = 'コピーできませんでした'; }
+    ta.remove();
+  }
+
+  // ============================================================
+  // 9. セルフチェック
+  // ============================================================
+  function externalRequests() {
+    if (!window.performance || !performance.getEntriesByType) return [];
+    // 自分と同じドメインの読み込み（favicon や og-image）は「外部送信」ではない。
+    // 公開するとこれらが https:// で載るため、別ドメインかどうかで判定する。
+    return performance.getEntriesByType('resource').filter(function (e) {
+      if (!/^https?:/i.test(e.name)) return false;
+      try { return new URL(e.name).origin !== location.origin; } catch (err) { return true; }
+    });
+  }
+  function updateNetBadge() {
+    var n = externalRequests().length;
+    var b = $('netBadge');
+    b.textContent = n === 0 ? '外部送信ゼロ（実測0件）' : '他ドメインへのリクエスト ' + n + ' 件';
+    b.style.borderColor = b.style.color = n === 0 ? 'var(--ok)' : 'var(--ng)';
+  }
+
+  // 検査用の画像を内部で作る（外部ファイルを読まない）
+  function makeTestImage(w, h) {
+    var c = document.createElement('canvas');
+    c.width = w; c.height = h;
+    var ctx = c.getContext('2d');
+    ctx.fillStyle = '#e04040';
+    ctx.beginPath();
+    ctx.arc(w / 2, h / 2, Math.min(w, h) / 2, 0, Math.PI * 2);
+    ctx.fill();
+    return loadImage(c.toDataURL('image/png'));
+  }
+
+  function px(canvas, x, y) {
+    return canvas.getContext('2d').getImageData(x, y, 1, 1).data;
+  }
+
+  function runTests() {
+    var t0 = performance.now();
+    var results = [];
+    function ok(name, cond, detail) { results.push({ name: name, pass: !!cond, detail: detail || '' }); }
+
+    var saveImg = state.img, saveBg = state.bg, savePad = state.padding, saveRad = state.radius;
+    var saveOg = JSON.parse(JSON.stringify(state.og));
+    var saveSite = JSON.parse(JSON.stringify(state.site));
+
+    return makeTestImage(400, 400).then(function (sq) {
+      state.img = sq; state.bg = ''; state.padding = 0; state.radius = 0;
+
+      // ---------- ICO ----------
+      return buildIco([16, 32, 48]).then(function (ico) {
+        var u8 = ico.bytes, dv = new DataView(u8.buffer);
+        ok('ICO ヘッダ reserved=0 / type=1 / count=3',
+          dv.getUint16(0, true) === 0 && dv.getUint16(2, true) === 1 && dv.getUint16(4, true) === 3,
+          'reserved=' + dv.getUint16(0, true) + ' type=' + dv.getUint16(2, true) + ' count=' + dv.getUint16(4, true));
+
+        var dims = [];
+        for (var i = 0; i < 3; i++) dims.push(u8[6 + 16 * i] + 'x' + u8[6 + 16 * i + 1]);
+        ok('ICO entry の寸法が 16x16 / 32x32 / 48x48', dims.join(' ') === '16x16 32x32 48x48', dims.join(' '));
+
+        var off0 = dv.getUint32(6 + 12, true);
+        ok('ICO 先頭 entry の imageOffset = 6 + 16×3 = 54', off0 === 54, 'offset=' + off0);
+
+        var len0 = dv.getUint32(6 + 8, true), len1 = dv.getUint32(6 + 16 + 8, true);
+        var off2 = dv.getUint32(6 + 32 + 12, true);
+        ok('ICO 末尾 entry の imageOffset = 54 + 前2枚の合計', off2 === 54 + len0 + len1,
+          'offset=' + off2 + ' 期待=' + (54 + len0 + len1));
+
+        var sigOk = true, where = [];
+        for (i = 0; i < 3; i++) {
+          var o = dv.getUint32(6 + 16 * i + 12, true);
+          for (var k = 0; k < 8; k++) if (u8[o + k] !== PNG_SIG[k]) { sigOk = false; where.push(i); break; }
+        }
+        ok('ICO 各 imageOffset が PNG シグネチャで始まる', sigOk, sigOk ? '3枚すべて一致' : '不一致: ' + where.join(','));
+
+        var sum = 54 + len0 + len1 + dv.getUint32(6 + 32 + 8, true);
+        ok('ICO 全体のバイト数 = 54 + 各 bytesInRes の合計', sum === u8.length,
+          '実測=' + u8.length + ' 計算=' + sum);
+
+        return buildIco([32]);
+      }).then(function (one) {
+        var dv = new DataView(one.bytes.buffer);
+        ok('ICO 1枚だけでも組める（count=1、offset=22）',
+          dv.getUint16(4, true) === 1 && dv.getUint32(6 + 12, true) === 22,
+          'count=' + dv.getUint16(4, true) + ' offset=' + dv.getUint32(6 + 12, true));
+
+        // ---------- 透過とセーフゾーン ----------
+        state.bg = ''; state.padding = 0; state.radius = 0;
+        var fav = renderIcon(32, { bg: '', padding: 0, radius: 0 });
+        var corners = [px(fav, 0, 0)[3], px(fav, 31, 0)[3], px(fav, 0, 31)[3], px(fav, 31, 31)[3]];
+        ok('背景=透過のとき favicon-32 の四隅のアルファが 0',
+          corners.every(function (a) { return a === 0; }), 'alpha=' + corners.join(','));
+
+        var apple = renderIcon(180, { bg: '', padding: 0, radius: 0, forceBg: true });
+        var ac = [px(apple, 0, 0), px(apple, 179, 0), px(apple, 0, 179), px(apple, 179, 179)];
+        ok('背景=透過でも apple-touch-icon の四隅のアルファが 255（iOS対策）',
+          ac.every(function (p) { return p[3] === 255; }),
+          'alpha=' + ac.map(function (p) { return p[3]; }).join(','));
+        ok('apple-touch-icon の四隅が白で塗られている',
+          ac.every(function (p) { return p[0] === 255 && p[1] === 255 && p[2] === 255; }),
+          'RGB=' + ac[0][0] + ',' + ac[0][1] + ',' + ac[0][2]);
+
+        var mask = renderIcon(512, { bg: '#0000ff', padding: 0, radius: 0, forceBg: true, safe: true });
+        var band = [[10, 10], [256, 10], [501, 10], [10, 256], [501, 256], [10, 501], [256, 501], [501, 501]];
+        var bandOk = band.every(function (p) {
+          var d = px(mask, p[0], p[1]);
+          return d[0] === 0 && d[1] === 0 && d[2] === 255;
+        });
+        ok('maskable の外周10%の帯が背景色のみ（元画像が侵入していない）', bandOk,
+          bandOk ? '8点すべて背景色' : '侵入あり');
+        var center = px(mask, 256, 256);
+        ok('maskable の中心に元画像が描かれている', center[0] > 150 && center[2] < 100,
+          'RGB=' + center[0] + ',' + center[1] + ',' + center[2]);
+
+        // 余白
+        var p40 = renderIcon(100, { bg: '#ffffff', padding: 40, radius: 0 });
+        var edge = px(p40, 5, 50), mid = px(p40, 50, 50);
+        ok('余白40%で、端は背景・中心は元画像',
+          edge[0] === 255 && edge[1] === 255 && mid[0] > 150 && mid[1] < 100,
+          '端RGB=' + edge[0] + ',' + edge[1] + ',' + edge[2] + ' 中心RGB=' + mid[0] + ',' + mid[1]);
+        ok('余白の入力は最大40%に抑えられている（0%になって消えない）',
+          $('padding').max === '40', 'max=' + $('padding').max);
+
+        // 角丸
+        var rr = renderIcon(64, { bg: '#ffffff', padding: 0, radius: 100 });
+        ok('角丸100%のとき四隅が透明（背景を塗る前にクリップしている）',
+          px(rr, 0, 0)[3] === 0 && px(rr, 63, 63)[3] === 0,
+          'alpha=' + px(rr, 0, 0)[3] + ',' + px(rr, 63, 63)[3]);
+
+        // ---------- 折り返し ----------
+        var mc = document.createElement('canvas').getContext('2d');
+        mc.font = 'bold 64px ' + FONT;
+        var W = OG_MAX_TEXT;
+        var over = function (lines) {
+          return lines.some(function (l) { return mc.measureText(l).width > W + 0.5; });
+        };
+        ok('折り返し：空文字は0行', wrapLines(mc, '', W).length === 0);
+        ok('折り返し：1文字は1行', wrapLines(mc, 'あ', W).length === 1);
+
+        var jp = 'あ'.repeat(60);
+        var jpl = wrapLines(mc, jp, W);
+        ok('折り返し：日本語60文字（空白なし）が2行以上に割れる', jpl.length >= 2, jpl.length + '行');
+        ok('折り返し：日本語の各行が最大幅を超えない', !over(jpl));
+
+        var en = 'The quick brown fox jumps over the lazy dog and keeps running far away into the night';
+        var enl = wrapLines(mc, en, W);
+        ok('折り返し：英語が2行以上に割れる', enl.length >= 2, enl.length + '行');
+        ok('折り返し：英語の単語が途中で切れない',
+          enl.every(function (l) { return en.indexOf(l) >= 0; }));
+        ok('折り返し：英語の各行が最大幅を超えない', !over(enl));
+
+        var mix = 'これは test を含む 混在の sentence です。' + 'あ'.repeat(40);
+        var mixl = wrapLines(mc, mix, W);
+        ok('折り返し：日英混在の各行が最大幅を超えない', !over(mixl), mixl.length + '行');
+
+        var url = 'https://example.com/' + 'a'.repeat(200);
+        var ul = wrapLines(mc, url, W);
+        ok('折り返し：空白なしの長いURLが文字単位で割れる', ul.length >= 2 && !over(ul), ul.length + '行');
+
+        var nl = wrapLines(mc, 'いち\nに\nさん', W);
+        ok('折り返し：改行を尊重する（3行）', nl.length === 3, nl.length + '行');
+
+        // ---------- OG ----------
+        state.og.title = 'テスト'; state.og.sub = 'サブ';
+        var ogc = renderOg();
+        ok('OG画像の寸法が 1200×630', ogc.width === 1200 && ogc.height === 630,
+          ogc.width + '×' + ogc.height);
+
+        // ---------- 非正方形 ----------
+        return makeTestImage(300, 100);
+      }).then(function (wide) {
+        state.img = wide;
+        var sizes = [16, 32, 180, 512];
+        var allSq = sizes.every(function (s) {
+          var c = renderIcon(s, { bg: '', padding: 0, radius: 0 });
+          return c.width === s && c.height === s;
+        });
+        ok('横長（300×100）の入力でも全アイコンが正方形', allSq);
+        var c32 = renderIcon(32, { bg: '', padding: 0, radius: 0 });
+        var cc = px(c32, 16, 16);
+        ok('横長の入力でも中央に元画像が入る', cc[3] > 0 && cc[0] > 150,
+          'RGBA=' + cc[0] + ',' + cc[1] + ',' + cc[2] + ',' + cc[3]);
+
+        // ---------- 出力の数 ----------
+        state.img = wide;
+        return buildAll();
+      }).then(function (outs) {
+        ok('出力ファイルが10個', outs.length === 10, outs.length + '個');
+        var names = outs.map(function (o) { return o.name; });
+        ok('favicon.ico と og-image.png と site.webmanifest が含まれる',
+          names.indexOf('favicon.ico') >= 0 && names.indexOf('og-image.png') >= 0 &&
+          names.indexOf('site.webmanifest') >= 0);
+
+        // ---------- webmanifest ----------
+        state.site.name = ''; state.site.short = '';
+        var m1 = buildManifest(), j1 = JSON.parse(m1);
+        ok('webmanifest：サイト名が空のとき name / short_name のキー自体が無い',
+          !('name' in j1) && !('short_name' in j1), Object.keys(j1).join(','));
+        ok('webmanifest：JSONとして解析できる', typeof j1 === 'object');
+        ok('webmanifest：maskable のエントリに purpose がある',
+          j1.icons.some(function (i) { return i.purpose === 'maskable'; }));
+        state.site.name = 'テスト社';
+        var j2 = JSON.parse(buildManifest());
+        ok('webmanifest：サイト名を入れると name が入る', j2.name === 'テスト社', j2.name);
+
+        // ---------- タグ ----------
+        state.site.url = '';
+        ok('タグ：URL未入力のとき og:image がプレースホルダのまま',
+          tagsPlain().indexOf('<サイトURL>/og-image.png') >= 0);
+        state.site.url = 'https://example.com/';
+        ok('タグ：URLの末尾のスラッシュを重ねない',
+          tagsPlain().indexOf('https://example.com/og-image.png') >= 0 &&
+          tagsPlain().indexOf('example.com//og') < 0);
+        state.og.title = 'あ"<b>&';
+        ok('タグ：タイトルの引用符と記号がエスケープされる',
+          buildTags().indexOf('&quot;&lt;b&gt;&amp;') >= 0);
+
+        // ---------- hidden属性が効いているか ----------
+        var hid = [].slice.call(document.querySelectorAll('[hidden]'));
+        var shown = hid.filter(function (e) { return getComputedStyle(e).display !== 'none'; });
+        ok('hidden属性のついた要素がすべて非表示（クラスのdisplayに負けていない）',
+          shown.length === 0,
+          shown.length === 0 ? hid.length + '要素すべて非表示' :
+            '見えている: ' + shown.map(function (e) { return '#' + e.id; }).join(','));
+
+        // ---------- 外部通信 ----------
+        var ext = externalRequests();
+        ok('他ドメインへのリクエストが0件', ext.length === 0,
+          ext.length === 0 ? '実測0件' : ext.map(function (e) { return e.name; }).join(' / '));
+
+        return results;
+      });
+    }).then(function (res) {
+      // 状態を元に戻す
+      state.img = saveImg; state.bg = saveBg; state.padding = savePad; state.radius = saveRad;
+      state.og = saveOg; state.site = saveSite;
+      state.outputs.forEach(function (o) { if (o.url) URL.revokeObjectURL(o.url); });
+      state.outputs = [];
+      $('fileWrap').hidden = true;
+      $('dlAll').disabled = true;
+      refresh();
+
+      var pass = res.filter(function (r) { return r.pass; }).length;
+      var sum = $('testSummary');
+      sum.hidden = false;
+      sum.textContent = pass + ' / ' + res.length + ' 件合格';
+      sum.style.color = pass === res.length ? 'var(--ok)' : 'var(--ng)';
+      $('testTime').textContent = (performance.now() - t0).toFixed(1) + ' ms';
+
+      var ul = $('testList');
+      ul.innerHTML = '';
+      res.forEach(function (r) {
+        var li = document.createElement('li');
+        li.className = r.pass ? 'pass' : 'fail';
+        var mk = document.createElement('span');
+        mk.className = 'mk'; mk.textContent = r.pass ? '✓' : '✕';
+        li.appendChild(mk);
+        var bd = document.createElement('div');
+        bd.textContent = r.name;
+        if (r.detail) {
+          var d = document.createElement('div');
+          d.className = 'd'; d.textContent = r.detail;
+          bd.appendChild(d);
+        }
+        li.appendChild(bd);
+        ul.appendChild(li);
+      });
+      updateNetBadge();
+    });
+  }
+
+  $('runTests').addEventListener('click', function () {
+    $('runTests').disabled = true;
+    $('runTests').textContent = '実行中…';
+    runTests().then(function () {
+      $('runTests').disabled = false;
+      $('runTests').textContent = '検査を実行';
+    }).catch(function (e) {
+      $('runTests').disabled = false;
+      $('runTests').textContent = '検査を実行';
+      $('testSummary').hidden = false;
+      $('testSummary').textContent = '検査が途中で止まりました: ' + e.message;
+      $('testSummary').style.color = 'var(--ng)';
+    });
+  });
+
+  // 起動
+  refresh();
+  updateNetBadge();
+  window.addEventListener('load', updateNetBadge);
+})();
+</script>
+</body>
+</html>
