@@ -4,6 +4,8 @@
 
 👉 **[kaz-ma.github.io/favicon-set/](https://kaz-ma.github.io/favicon-set/)**
 
+![favicon・OG画像 一式ジェネレーターの画面。SVGを1枚入れて、アイコンのプレビューとOG画像を生成している](screenshot.png)
+
 ---
 
 ## 出るもの
